@@ -1,0 +1,479 @@
+@model sheeple.Models.PersonViewModel
+@{
+    Layout = "_Layout";
+
+    var personId = Model != null ? Model.Id : 0;
+    var actionType = Model != null ? Model.ActionType : "create";
+    var createMode = !string.IsNullOrEmpty(actionType) && (bool)actionType?.Equals("create");
+    var editMode = !string.IsNullOrEmpty(actionType) && (bool) actionType?.Equals("modify");
+
+    var personData = Model != null ? Model.Person : null;
+
+    var allowFileUpload = Model != null && Model.Id != 0 && editMode;
+
+    var gender = Model != null && null != Model.Person ? Model.Person.Gender : "select";
+    var country = Model != null && null != Model.Person && null != Model.Person.Address ? Model.Person.Address.Country : "select";
+}
+
+<!-- Content -->
+<div class="container-xxl flex-grow-1 container-p-y">
+    <div class="card mb-4">
+        <h5 class="card-header">Profile Details</h5>
+        <!-- Account -->
+        <div class="card-body">
+            @if (createMode) {
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading fw-bold mb-1">Cannot change your avatar?</h6>
+                    <p class="mb-0">Don't worry, once you have created a new account the Avatar can be uploaded.</p>
+                </div>
+            }
+            <div class="d-flex align-items-start align-items-sm-center gap-4">
+            <img
+                src='@(null != personData?.Avatar ? $"/api/files/{personData?.Avatar?.Id}" : "/assets/img/avatars/150169.jpeg")'
+                alt="user-avatar"
+                class="d-block rounded"
+                height="100"
+                width="100"
+                id="uploadedAvatar"
+                db-id="@personData?.Avatar?.Id"
+            />
+            @if (editMode) {
+                <div class="button-wrapper">
+                    <label for="upload" class="btn btn-primary me-2 mb-4" tabindex="0">
+                    <span class="d-none d-sm-block">Upload new photo</span>
+                    <i class="bx bx-upload d-block d-sm-none"></i>
+                    <input
+                        type="file"
+                        id="upload"
+                        class="account-file-input"
+                        hidden
+                        accept="image/png, image/jpeg"
+                    />
+                    </label>
+                    <button type="button" class="btn btn-outline-secondary account-image-reset mb-4">
+                    <i class="bx bx-reset d-block d-sm-none"></i>
+                    <span class="d-none d-sm-block">Reset</span>
+                    </button>
+
+                    <p class="text-muted mb-0">Allowed JPG, GIF or PNG. Max size of 800K</p>
+                </div>
+            }
+            </div>
+        </div>
+        <hr class="my-0" />
+        <div class="card-body">
+            <div id="formAccountSettings">
+                <div class="row">
+                    <!--begin::ID's-->
+                    <div class="d-none">
+                    <input class="form-control" type="text" id="personId" name="personId" value="@personData?.Id" autofocus/>
+                    </div>
+                    <div class="d-none">
+                    <input class="form-control" type="text" id="addressId" name="addressId" value="@personData?.Contact?.Id" autofocus/>
+                    </div>
+                    <div class="d-none">
+                    <input class="form-control" type="text" id="contactId" name="contactId" value="@personData?.Address?.Id" autofocus/>
+                    </div>
+                    <!--end::ID's-->
+                    <div class="mb-3 col-md-6">
+                    <label for="firstName" class="form-label required">First Name</label>
+                    <input
+                        class="form-control"
+                        type="text"
+                        id="firstName"
+                        name="firstName"
+                        placeholder="First Name"
+                        value="@personData?.Name"
+                        autofocus
+                    />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                    <label for="lastName" class="form-label required">Last Name</label>
+                    <input class="form-control" type="text" name="lastName" id="lastName" placeholder="Last Name" value="@personData?.Surname" />
+                    </div>
+                    @if (null != Model.Genders)
+                    {
+                        <div class="mb-3 col-md-6">
+                        <label for="gender" class="form-label required">Gender</label>
+                            <select id="gender" class="select2 form-select">
+                                @foreach(var item in Model.Genders)
+                                {
+                                    var selected = item?.Gender?.Equals(Model?.Person?.Gender);
+                                    if (null != selected && (bool) selected) {
+                                        <option selected value="@item?.Gender">@item?.Gender</option>
+                                    } else {
+                                        <option value="@item?.Gender">@item?.Gender</option>
+                                    }   
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="mb-3 col-md-6">
+                    <label for="email" class="form-label required">E-mail</label>
+                    <input
+                        class="form-control"
+                        type="text"
+                        id="email"
+                        name="email"
+                        placeholder="john.doe@example.com"
+                        value="@personData?.Contact?.Email"
+                    />
+                    </div>
+                    <div class="mb-3 col-md-6">
+                    <label class="form-label required" for="phoneNumber">Phone Number</label>
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text">SA (+27)</span>
+                        <input
+                        type="text"
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        class="form-control"
+                        placeholder="02 555 0111"
+                        value="@personData?.Contact?.Mobile"
+                        />
+                    </div>
+                    </div>
+                    <div class="mb-3 col-md-6">
+                    <label for="state" class="form-label required">City</label>
+                    <input class="form-control" type="text" id="city" name="city" placeholder="Pretoria" value="@personData?.Address?.City"/>
+                    </div>
+                    <div class="mb-3 col-md-6">
+                    <label for="province" class="form-label required">Province</label>
+                    <input class="form-control" type="text" id="province" name="province" placeholder="California" value="@personData?.Address?.Province"/>
+                    </div>
+                    @if (null != Model?.Countries)
+                    {
+                        <div class="mb-3 col-md-6">
+                            <label class="form-label required" for="country">Country</label>
+                            <select id="country" class="select2 form-select">
+                                @foreach (var item in Model.Countries)
+                                {
+                                    var selected = item?.Country?.Equals(Model?.Person?.Address?.Country);
+                                    if (null != selected && (bool) selected) {
+                                        <option selected value="@item?.Country">@item?.Country</option>
+                                    } else {
+                                        <option value="@item?.Country">@item?.Country</option>
+                                    }   
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+                <div class="mt-2">
+                    @if (createMode)
+                    {
+                        <button onclick="CreatePerson()" class="btn btn-primary me-2">Create Person</button>   
+                    }
+                    @if (editMode)
+                    {
+                        <button onclick="ModifyPerson()" class="btn btn-primary me-2">Edit Person</button>   
+                    }
+                    <button type="reset" class="btn btn-outline-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <!-- /Account -->
+        </div>
+        @if (editMode) {
+            <div class="card">
+                <h5 class="card-header">Delete Account</h5>
+                <div class="card-body">
+                    <div class="mb-3 col-12 mb-0">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading fw-bold mb-1">Are you sure you want to delete the account?</h6>
+                        <p class="mb-0">Once you delete your account, there is no going back. Please be certain.</p>
+                    </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="accountActivation"
+                        id="accountActivation"
+                        />
+                        <label class="form-check-label" for="accountActivation"
+                        >I confirm the account deactivation</label
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-danger deactivate-account" onclick="DeletePerson()">Deactivate Account</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!--begin::Handel File Changes-->
+<script>
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function (e) {
+        (async function () {
+            const deactivateAcc = document.querySelector('#formAccountDeactivation');
+
+            // Update/reset user image of account page
+            let accountUserImage = document.getElementById('uploadedAvatar');
+            const fileInput = document.querySelector('.account-file-input'),
+            resetFileInput = document.querySelector('.account-image-reset');
+
+            if (accountUserImage) {
+            const resetImage = accountUserImage.src;
+            fileInput.onchange = async () => {
+                console.log('changing the file...');
+                if (fileInput.files[0]) {
+                    console.log('here is the file: ', fileInput.files[0])
+                    accountUserImage.src = window.URL.createObjectURL(fileInput.files[0]);
+                    await uploadAvatar(fileInput.files[0]);
+                }
+            };
+            resetFileInput.onclick = async () => {
+                fileInput.value = '';
+                accountUserImage.src = resetImage;
+                await removeAvatar();
+            };
+            }
+        })();
+    });
+
+    async function SendAvatar(id) {
+        try{
+            const currentFile = document.querySelector('.account-file-input').files[0]; // get the file
+            if (currentFile) {
+                // Add/Replace the file in the database
+                await uploadAvatar(currentFile);
+            } else {
+                // Remove the file from the database
+                await removeAvatar();
+            }
+        } catch(e) {
+            console.warn(`Sending Avatar failed with Exception: ${e}`)
+        }
+    }
+
+    const uploadAvatar = async (file) => {
+        // add file to FormData Object
+        const fd = new FormData();
+        fd.append('file', file);
+
+        // send POST request
+        await $.postFORMDATA('/api/files/@personId', fd, async function(r) {
+            // First confirmation
+        }).done(async function(r) {
+            // Do something here
+            Swal.fire({
+                icon: 'success',
+                title: 'Avatar Successfully updated',
+                backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/images/nyan-cat.gif")
+                    left top
+                    no-repeat
+                `
+            });
+        }).fail(async function(r) {
+            // When failing
+            Swal.fire({
+                icon: 'error',
+                title: 'Avatar update failed!',
+                text: 'Something went wrong, please contact your system administrator or try again later!',
+                backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/images/patrick-sad.gif")
+                    left top
+                    no-repeat
+                `
+            })
+        })
+    }
+
+    const removeAvatar = async () => {
+        // Remove the avatar
+        await deleteJSON('/api/files/@personId', async function(r) {
+
+        }).done(async function(r) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Avatar Successfully removed!',
+                backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/images/nyan-cat.gif")
+                    left top
+                    no-repeat
+                `
+            });
+        }).fail(async function(r) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Avatar removal failed!',
+                text: 'Something went wrong, please contact your system administrator or try again later!',
+                backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/images/patrick-sad.gif")
+                    left top
+                    no-repeat
+                `
+            })
+        })
+    }
+</script>
+<!--end::Sending Avatar-->
+
+<!-- Create Script -->
+@if (createMode)
+{
+    <text>
+        <script>
+            async function CreatePerson() {
+                const personData = {
+                    "Name": $('#firstName').val(),
+                    "Surname": $('#lastName').val(),
+                    "Gender": $('#gender').val(),
+                    "Address": {
+                        "Country": $('#country').val(),
+                        "Province": $('#province').val(),
+                        "City": $('#city').val()
+                    },
+                    "Contact": {
+                        "Email": $('#email').val(),
+                        "Mobile": $('#phoneNumber').val()
+                    }
+                }
+
+                $.postJSON('/api/person', personData, async function(r) {
+                    // first confirmation
+                }).done(async function(r) {
+                    // Do swal here
+                    Swal.fire({
+                            icon: 'success',
+                            title: 'Person Successfully created',
+                            text: 'Click OK to be redirected to the Person Detail Screen.',
+                            backdrop: `
+                                rgba(0,0,123,0.4)
+                                url("/images/nyan-cat.gif")
+                                left top
+                                no-repeat
+                            `
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.replace(`/person?id=${r.data.id}&actionType=modify`);
+                                }
+                            })
+                }).fail(async function(r) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Person creation failed!',
+                        text: 'Something went wrong, please contact your system administrator or try again later!',
+                        backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/patrick-sad.gif")
+                            left top
+                            no-repeat
+                        `
+                        })
+                }).always(async function(r) {
+
+                })
+            }
+        </script>
+    </text>
+}
+
+<!-- Modify Script -->
+@if (editMode)
+{
+    <text>
+        <script>
+            async function ModifyPerson() {
+                const personData = {
+                    "Id": '@personId',
+                    "Name": $('#firstName').val(),
+                    "Surname": $('#lastName').val(),
+                    "Gender": $('#gender').val(),
+                    "Address": {
+                        "Country": $('#country').val(),
+                        "Province": $('#province').val(),
+                        "City": $('#city').val()
+                    },
+                    "Contact": {
+                        "Email": $('#email').val(),
+                        "Mobile": $('#phoneNumber').val()
+                    }
+                }
+
+                $.putJSON('/api/person/@personId', personData, async function(r) {
+                    // first confirmation
+                }).done(async function(r) {
+                    // Do swal here
+                    Swal.fire({
+                            icon: 'success',
+                            title: 'Person Successfully modified',
+                            backdrop: `
+                                rgba(0,0,123,0.4)
+                                url("/images/nyan-cat.gif")
+                                left top
+                                no-repeat
+                            `
+                            })
+                }).fail(async function(r) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Person creation failed!',
+                        text: 'Something went wrong, please contact your system administrator or try again later!',
+                        backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/patrick-sad.gif")
+                            left top
+                            no-repeat
+                        `
+                        })
+                }).always(async function(r) {
+
+                })
+            }
+        </script>
+    </text>
+}
+
+<!-- Modify Script -->
+@if (editMode)
+{
+    <text>
+        <script>
+            async function DeletePerson() {
+                $.deleteJSON('/api/person/@personId', async function(r) {
+                    // first confirmation
+                }).done(async function(r) {
+                    // Do swal here
+                    Swal.fire({
+                            icon: 'success',
+                            title: 'Person Successfully deleted.',
+                            text: 'Press OK to return to the Person listing page.',
+                            backdrop: `
+                                rgba(0,0,123,0.4)
+                                url("/images/nyan-cat.gif")
+                                left top
+                                no-repeat
+                            `
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.replace(`/person/list`);
+                                }
+                            })
+                }).fail(async function(r) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Person deletion failed!',
+                        text: 'Something went wrong, please contact your system administrator or try again later!',
+                        backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/patrick-sad.gif")
+                            left top
+                            no-repeat
+                        `
+                        })
+                }).always(async function(r) {
+
+                })
+            }
+        </script>
+    </text>
+}

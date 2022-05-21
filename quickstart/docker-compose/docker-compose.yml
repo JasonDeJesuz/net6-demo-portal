@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  sheeple-app:
+    networks:
+      - sheeple-quickstart
+    container_name: sheeple-app
+    build: ../../sheeple/
+    ports:
+      - "8000:80"
+    image: docker-compose_sheeple-app
+    depends_on:
+      - sheeple-sql
+    volumes:
+      - ./appsettings/appsettings.docker.json:/app/sheeple/appsettings.json
+  sheeple-sql:
+    networks:
+        - sheeple-quickstart
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    container_name: sheeple-sql
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "12345OHdf%e"
+      ACCEPT_EULA: "Y"
+
+networks:
+  sheeple-quickstart:
